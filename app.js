@@ -62,7 +62,7 @@ app.get('/compareQR/:QRCode', function(req, res){
 
 	var DBSession  = 	require('./Mongo/DBSessions');
 
-	DBSession.findDeviceUser(value, function(findOK){
+	DBSession.findSession(value, function(findOK){
 		if (findOK) {
 			console.log("OK Login");
 		} else {
