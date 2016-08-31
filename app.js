@@ -6,11 +6,16 @@ var express = require('express')
 var cookieParser = require('cookie-parser');
 var session = require('express-session');
 
+var fs = require('fs')
+
 var uuid = require('node-uuid');
 
 
 app.engine('jade', require('jade').__express) //__
 app.set('view engine', 'jade')
+
+
+app.use(express.static(__dirname+'/public'));
 
 app.use(sse)
 
@@ -51,36 +56,65 @@ app.get('/stream', function(req, res) {
 
     var randomQR = req.query.randomQR
 
-    var client = connectionsForSSE[randomQR];
 
-    if (client) {
-        console.log(client.req.session.login)
-        console.log(req.session.login)
+    connectionsForSSE[randomQR] = {res: res, user: "", login: false};
+    res.sseSetup()
+    res.sseSend("begin")
 
-        res.sseSetup()
-        res.sseSend("refresh")
-        client.res = res
-    }
 })
+
+
+app.get('/login', function(req, res){
+
+	console.log("Login")
+
+	var currentQRCode = req.query.id
+
+
+	var client = connectionsForSSE[currentQRCode];
+
+	if (client) {
+		if (client.login) {
+
+			res.send("Hello " + client.user);
+			req.session.user = client.user
+
+		} else {
+			res.redirect('/');
+		}
+
+		
+
+		fs.unlink('public/'+ currentQRCode + '.png', function(err) {
+		    if (err) return console.error(err);
+		});
+
+		delete connectionsForSSE[currentQRCode]
+	} else {
+		res.send("error");
+	};
+
+})
+
 
 
 app.get('/', function(req, res){
 
     var randomQR = uuid.v1()
 
-    req.session.QR = randomQR
-    
+   
 
-    connectionsForSSE[randomQR] = {res: res, req: req};
+    
 
 	var qr = require('qr-image');
  
 	var qr_svg = qr.image(req.session.QR, { type: 'png' });
+
+	var imageg = fs.createWriteStream('public/' +randomQR+'.png')
+	qr_svg.pipe(imageg);
 	
 
-    console.log(req.session.QR)
-
-    res.render('result', {QR: randomQR})
+    res.render('result', {QR: randomQR, QRCode: randomQR+'.png'})
 
 	//qr_svg.pipe(req.session.QR);
 
@@ -92,15 +126,14 @@ app.get('/', function(req, res){
 app.get('/compareQR/:QRCode', function(req, res){
 
 	var currentQRCode = req.params.QRCode;
-
-	
-
+	var user = req.query.user
 
 	var client = connectionsForSSE[currentQRCode];
 
 	if (client) {
 
-        client.req.session.login = true
+ 		client.user = user
+ 		client.login = true
         client.res.sseSend(currentQRCode)
 
 		res.send("OK");

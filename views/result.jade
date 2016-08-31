@@ -3,7 +3,8 @@ html
   head
     title Voting results for world peace
   body
-    div(id="answer") no answer
+    img(id="QRCode" src= QRCode)
+    div(id="answer")
     div(id="state") Disconnected
   script(src="//code.jquery.com/jquery-2.1.4.min.js")
   script.
@@ -12,10 +13,18 @@ html
 
       source.addEventListener('message', function(e) {
         answer = JSON.parse(e.data)
-        $("#answer").text("Yes: " + answer)
+        if (answer != "begin") {
+          //$("#QRCode").removeAttr(‘src’)
+          //$("#answer").text("Hello " + answer)
+
+          //$.get("login")
+
+          window.location.replace("/login?id="+answer);
+        }
       }, false)
 
       source.addEventListener('open', function(e) {
+        $("#QRCode").attr("src", '#{QRCode}')
         $("#state").text("Connected")
       }, false)
 
