@@ -108,7 +108,7 @@ app.get('/', function(req, res){
 
 	var qr = require('qr-image');
  
-	var qr_svg = qr.image(req.session.QR, { type: 'png' });
+	var qr_svg = qr.image(randomQR, { type: 'png' });
 
 	var imageg = fs.createWriteStream('public/' +randomQR+'.png')
 	qr_svg.pipe(imageg);
